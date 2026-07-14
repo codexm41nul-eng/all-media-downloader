@@ -25,6 +25,23 @@ if (!process.env.PATH.includes(BIN_DIR)) {
   process.env.PATH = `${BIN_DIR}:${process.env.PATH}`;
 }
 
+// ── Make ffmpeg (from ffmpeg-static) available to yt-dlp ─────────────────────
+// yt-dlp needs ffmpeg to merge separate video+audio streams into one mp4.
+// Render's default Node buildpack has no ffmpeg installed, which silently
+// breaks HD downloads and forces slow, unreliable scraper fallbacks.
+try {
+  const ffmpegPath = require('ffmpeg-static');
+  if (ffmpegPath) {
+    const ffmpegDir = path.dirname(ffmpegPath);
+    if (!process.env.PATH.includes(ffmpegDir)) {
+      process.env.PATH = `${ffmpegDir}:${process.env.PATH}`;
+    }
+  }
+} catch (_) {
+  // ffmpeg-static not installed — yt-dlp will fall back to formats
+  // that don't need merging, or fallback scrapers will be used instead.
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 module.exports = {

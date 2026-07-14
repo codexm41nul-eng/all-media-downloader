@@ -731,6 +731,23 @@
     }
   });
 
+  document.querySelectorAll('.code-copy').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const block = btn.closest('.code-block');
+      const text = block ? block.getAttribute('data-copy') : '';
+      if (!text) return;
+      try{
+        await navigator.clipboard.writeText(text);
+        const original = btn.innerHTML;
+        btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+        setTimeout(() => { btn.innerHTML = original; }, 1400);
+      }catch(err){
+        btn.title = 'Copy failed';
+      }
+    });
+  });
+
   const qrOverlay = document.getElementById('qr-overlay');
   const qrImage = document.getElementById('qr-image');
   let qrLoaded = false;
