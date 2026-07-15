@@ -3,14 +3,14 @@
  * All Media Downloader Bot - Buttons & Messages
  * ============================================
  * Developer : Md. Mainul Islam
- * Owner     : CODEX-M41NUL
+ * Owner     : MAINUL - X
  * Telegram  : https://t.me/mdmainulislaminfo
  * GitHub    : https://github.com/M41NUL
  * WhatsApp  : +8801308850528
- * Channel   : https://t.me/codexm41nul
- * Group     : https://t.me/codex_m41nul
- * Email     : devmainulislam@gmail.com
- * YouTube   : https://youtube.com/@codexm41nul
+ * Channel   : https://t.me/mainul_x_official
+ * Group     : https://t.me/mainul_x_official_gc
+ * Email     : githubmainul@gmail.com | devmainulislam@gmail.com
+ * YouTube   : https://youtube.com/@mdmainulislaminfo
  * License   : MIT License
  * ============================================
  */
@@ -33,68 +33,70 @@ function escMd(str) {
 // ── Main Menu ────────────────────────────────────────────────────────────────
 const MAIN_MENU = Markup.inlineKeyboard([
   [
-    Markup.button.callback('Auto Detect Mode', 'mode_auto'),
-    Markup.button.callback('Manual Mode',      'mode_manual'),
+    Markup.button.callback('🎬 Auto Detect Mode', 'mode_auto'),
+    Markup.button.callback('🎯 Manual Mode',      'mode_manual'),
   ],
   [
-    Markup.button.callback('Settings', 'settings'),
-    Markup.button.callback('Help',     'help'),
+    Markup.button.callback('⚙️ Settings', 'settings'),
+    Markup.button.callback('❓ Help',     'help'),
   ],
   [
-    Markup.button.url('Channel', DEV.channel),
-    Markup.button.url('Group',   DEV.group),
+    Markup.button.url('📢 Channel', DEV.channel),
+    Markup.button.url('👥 Group',   DEV.group),
   ],
 ]);
 
 // ── Auto Detect submenu ───────────────────────────────────────────────────────
 const AUTO_MENU = Markup.inlineKeyboard([
   [
-    Markup.button.callback('ON',  'auto_on'),
-    Markup.button.callback('OFF', 'auto_off'),
+    Markup.button.callback('✅ ON',  'auto_on'),
+    Markup.button.callback('🔴 OFF', 'auto_off'),
   ],
-  [Markup.button.callback('Back', 'back_main')],
+  [Markup.button.callback('🔙 Back', 'back_main')],
 ]);
 
 // ── Auto Detect — waiting for link (ON state) ─────────────────────────────────
 const AUTO_ON_MENU = Markup.inlineKeyboard([
-  [Markup.button.callback('Disable', 'auto_off')],
-  [Markup.button.callback('Back',    'back_main')],
+  [Markup.button.callback('🔴 Disable', 'auto_off')],
+  [Markup.button.callback('🔙 Back',    'back_main')],
 ]);
 
 // ── Manual — platform selector ────────────────────────────────────────────────
 const PLATFORM_MENU = Markup.inlineKeyboard([
   [
-    Markup.button.callback('TikTok',    'platform_tiktok'),
-    Markup.button.callback('Instagram', 'platform_instagram'),
-    Markup.button.callback('Facebook',  'platform_facebook'),
+    Markup.button.callback('🎵 TikTok',    'platform_tiktok'),
+    Markup.button.callback('📸 Instagram', 'platform_instagram'),
+    Markup.button.callback('📘 Facebook',  'platform_facebook'),
   ],
-  [Markup.button.callback('Back', 'back_main')],
+  [Markup.button.callback('🔙 Back', 'back_main')],
 ]);
 
 // ── Manual — waiting for link (per platform) ─────────────────────────────────
 const MANUAL_WAITING_MENU = Markup.inlineKeyboard([
-  [Markup.button.callback('Back to Platforms', 'mode_manual')],
+  [Markup.button.callback('🔙 Back to Platforms', 'mode_manual')],
 ]);
 
 // ── Final result action buttons ───────────────────────────────────────────────
 const RESULT_MENU = Markup.inlineKeyboard([
-  [Markup.button.callback('New Video', 'result_new')],
-  [Markup.button.callback('Delete',    'result_clear')],
+  [
+    Markup.button.callback('🔄 New Video', 'result_new'),
+    Markup.button.callback('🧹 Clear',     'result_clear'),
+  ],
 ]);
 
 // ── Settings ──────────────────────────────────────────────────────────────────
 const SETTINGS_MENU = Markup.inlineKeyboard([
-  [Markup.button.callback('Developer Info', 'developer')],
+  [Markup.button.callback('👨‍💻 Developer Info', 'developer')],
   [
-    Markup.button.url('Channel', DEV.channel),
-    Markup.button.url('Group',   DEV.group),
+    Markup.button.url('📢 Channel', DEV.channel),
+    Markup.button.url('👥 Group',   DEV.group),
   ],
-  [Markup.button.callback('Back', 'back_main')],
+  [Markup.button.callback('🔙 Back', 'back_main')],
 ]);
 
 // ── Generic back to main ──────────────────────────────────────────────────────
 const BACK_MENU = Markup.inlineKeyboard([
-  [Markup.button.callback('Main Menu', 'back_main')],
+  [Markup.button.callback('🏠 Main Menu', 'back_main')],
 ]);
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -103,22 +105,22 @@ const BACK_MENU = Markup.inlineKeyboard([
 
 function welcomeText(firstName) {
   return (
-`*All Media Downloader*
+`🎬 *All Media Downloader*
 
-Welcome, *${escMd(firstName)}*\\!
+👋 Welcome, *${escMd(firstName)}*\\!
 
 Download videos from:
-• *TikTok* — no watermark
-• *Instagram* — Reels \\& Posts
-• *Facebook* — Public videos
+• 🎵 *TikTok* — no watermark
+• 📸 *Instagram* — Reels \\& Posts
+• 📘 *Facebook* — Public videos
 
-Select a mode to get started\\.`
+Select a mode to get started ⬇️`
   );
 }
 
 function autoDetectMenuText() {
   return (
-`*Auto Detect Mode*
+`🎬 *Auto Detect Mode*
 
 Turn ON to send any supported video link\\.
 The bot will detect the platform automatically\\.`
@@ -127,7 +129,7 @@ The bot will detect the platform automatically\\.`
 
 function autoOnText() {
   return (
-`*Auto Detect Mode Enabled*
+`⚡ *Auto Detect Mode Enabled*
 
 Please send your video link\\.
 Supported: TikTok • Instagram • Facebook`
@@ -136,7 +138,7 @@ Supported: TikTok • Instagram • Facebook`
 
 function autoOffText() {
   return (
-`*Auto Detect Mode Disabled*
+`⚠️ *Auto Detect Mode Disabled*
 
 Link processing has been stopped\\.
 Press *ON* to re\\-enable or go back to the main menu\\.`
@@ -144,12 +146,14 @@ Press *ON* to re\\-enable or go back to the main menu\\.`
 }
 
 function manualModeText() {
-  return `*Manual Mode* — Select a platform:`;
+  return `🎯 *Manual Mode* — Select a platform:`;
 }
 
 function manualSelectedText(platform) {
+  const icons = { TikTok: '🎵', Instagram: '📸', Facebook: '📘' };
+  const icon  = icons[platform] || '🎬';
   return (
-`*You selected ${escMd(platform)}*
+`${icon} *You selected ${escMd(platform)}*
 
 Please send your video link\\.`
   );
@@ -157,25 +161,25 @@ Please send your video link\\.`
 
 function helpText() {
   return (
-`*How to Use All Media Downloader*
+`❓ *How to Use All Media Downloader*
 
-*Auto Detect Mode*
-1\\. Tap *Auto Detect Mode*, then press *ON*
+*🎬 Auto Detect Mode*
+1\\. Tap *Auto Detect Mode* → press *ON*
 2\\. Send any supported video link
 3\\. Bot auto\\-detects platform & downloads
 
-*Manual Mode*
+*🎯 Manual Mode*
 1\\. Tap *Manual Mode*
 2\\. Select platform \\(TikTok / Instagram / Facebook\\)
 3\\. Send the video link
-4\\. Receive your video
+4\\. Receive your video ✅
 
-*Supported Platforms*
-• TikTok — no watermark
-• Instagram — Reels, Posts, IGTV
-• Facebook — Public videos
+*📌 Supported Platforms*
+• 🎵 TikTok — no watermark
+• 📸 Instagram — Reels, Posts, IGTV
+• 📘 Facebook — Public videos
 
-*Notes*
+*⚠️ Notes*
 • Only public videos are supported
 • Max file size: 50 MB via Telegram
 • Video link must be valid & accessible`
@@ -184,20 +188,22 @@ function helpText() {
 
 function developerText() {
   return (
-`*Developer Information*
+`👨‍💻 *Developer Information*
 
-*Name:* ${escMd(DEV.name)}
-*Owner:* ${escMd(DEV.owner)}
-*Telegram:* [${escMd(DEV.handle)}](${DEV.telegram})
-*GitHub:* [M41NUL](${DEV.github})
-*WhatsApp:* ${escMd(DEV.whatsapp)}
-*Email:* ${escMd(DEV.email1)}
-*YouTube:* [codexm41nul](${DEV.youtube})
+🧑 *Name:* ${escMd(DEV.name)}
+🏷️ *Owner:* ${escMd(DEV.owner)}
+📱 *Telegram:* [${escMd(DEV.handle)}](${DEV.telegram})
+💻 *GitHub:* [M41NUL](${DEV.github})
+📞 *WhatsApp:* ${escMd(DEV.whatsapp)}
+📧 *Email:*
+  • ${escMd(DEV.email1)}
+  • ${escMd(DEV.email2)}
+▶️ *YouTube:* [mdmainulislaminfo](${DEV.youtube})
 
-*Channel:* [codexm41nul](${DEV.channel})
-*Group:* [codex\\_m41nul](${DEV.group})
+📢 *Channel:* [mainul\\_x\\_official](${DEV.channel})
+👥 *Group:* [mainul\\_x\\_official\\_gc](${DEV.group})
 
-*License:* MIT License`
+📜 *License:* MIT License`
   );
 }
 
@@ -216,13 +222,13 @@ function progressBar(percent, speed, type = 'download') {
 
   if (type === 'download') {
     return (
-`*Downloading Video\\.\\.\\.*
+`⬇️ *Downloading Video\\.\\.\\.*
 \`[${bar}] ${percent}%\`
-${speed ? `Speed: ${escMd(speed)}` : ''}`
+${speed ? `🚀 Speed: ${escMd(speed)}` : ''}`
     );
   }
   return (
-`*Sending Video\\.\\.\\.*
+`📤 *Sending Video\\.\\.\\.*
 \`[${bar}] ${percent}%\``
   );
 }
@@ -240,12 +246,15 @@ function resultCaption(info) {
   const duration = escMd(info.duration || 'Unknown');
 
   return (
-`*Caption:* \`${title}\`
+`📋 *Title:* \`${title}\`
 
-*Platform:* ${platform}
-*Format:* MP4
-*Size:* ${size}
-*Duration:* ${duration}`
+🌐 *Platform:* ${platform}
+🎥 *Format:* MP4
+⚖️ *Size:* ${size}
+⏱️ *Duration:* ${duration}
+
+🤖 *Bot:* [All Media Downloader](https://t.me/allmedia_downloaderx_bot)
+👨‍💻 *Dev:* ${escMd(DEV.handle)}`
   );
 }
 
@@ -253,7 +262,7 @@ function resultCaption(info) {
 
 function errorText(message) {
   return (
-`*Download Failed*
+`❌ *Download Failed*
 
 ${escMd(message)}
 
@@ -265,7 +274,7 @@ _This message will be deleted in 3 seconds\\.\\.\\._`
 
 function settingsText() {
   return (
-`*Settings*
+`⚙️ *Settings*
 
 Manage your bot preferences and info below\\.`
   );

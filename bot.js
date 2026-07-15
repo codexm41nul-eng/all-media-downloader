@@ -18,7 +18,6 @@
 'use strict';
 
 const express      = require('express');
-const https         = require('https');
 const { Telegraf } = require('telegraf');
 
 const config   = require('./config');
@@ -44,18 +43,8 @@ if (!config.BOT_TOKEN) {
 }
 
 // ── Bot instance ──────────────────────────────────────────────────────────────
-// keepAlive + generous timeout agent — reduces "socket hang up" errors on
-// slow/free-tier hosts when uploading larger video files to Telegram.
-const telegramAgent = new https.Agent({
-  keepAlive: true,
-  keepAliveMsecs: 10000,
-  timeout: 120000, // 120s socket timeout
-});
 
-const bot = new Telegraf(config.BOT_TOKEN, {
-  telegram: { agent: telegramAgent },
-  handlerTimeout: 180000, // allow slow download+send handlers up to 180s
-});
+const bot = new Telegraf(config.BOT_TOKEN);
 
 // ══════════════════════════════════════════════════════════════════════════════
 // SESSION
@@ -414,7 +403,6 @@ bot.on('text', async (ctx) => {
 
   // Wrap download so we can distinguish it from animation in Promise.race
   const DOWNLOAD_DONE = Symbol('download_done');
-  const startedAt = Date.now();
   const downloadPromise = download(text, sess.platform || null)
     .then(result => ({ __tag: DOWNLOAD_DONE, result }));
 
@@ -476,13 +464,8 @@ bot.on('text', async (ctx) => {
   );
   await animateProgress(ctx, chatId, statusMsg.message_id, sendSteps, 'send');
 
-  // Record stat (with timing + size so the 7-day activity chart has data)
-  const elapsedMs = Date.now() - startedAt;
-  let fileBytes = 0;
-  try {
-    fileBytes = require('fs').statSync(info.filePath).size;
-  } catch (_) {}
-  db.recordDownload(ctx.from.id, platform, { timeMs: elapsedMs, bytes: fileBytes });
+  // Record stat
+  db.recordDownload(ctx.from.id, platform);
 
   // Delete progress message
   await safeDelete(ctx, chatId, statusMsg.message_id);
@@ -490,39 +473,22 @@ bot.on('text', async (ctx) => {
 
   try {
     const { createReadStream } = require('fs');
-    const MAX_SEND_ATTEMPTS = 3;
-    let lastErr = null;
-
-    for (let attempt = 1; attempt <= MAX_SEND_ATTEMPTS; attempt++) {
-      try {
-        await ctx.replyWithVideo(
-          // re-create the stream each attempt — a stream can only be read once
-          { source: createReadStream(info.filePath), filename: 'video.mp4' },
-          {
-            caption      : resultCaption(info),
-            parse_mode   : 'MarkdownV2',
-            reply_markup : RESULT_MENU.reply_markup,
-          }
-        );
-        lastErr = null;
-        break; // success
-      } catch (sendErr) {
-        lastErr = sendErr;
-        const transient = /socket hang up|ETIMEDOUT|ECONNRESET|timed out/i.test(sendErr.message || '');
-        console.error(`[Send Error] attempt ${attempt}/${MAX_SEND_ATTEMPTS} | ${sendErr.message}`);
-        if (!transient || attempt === MAX_SEND_ATTEMPTS) break;
-        // exponential backoff: 2s, 4s
-        await new Promise(r => setTimeout(r, attempt * 2000));
+    await ctx.replyWithVideo(
+      { source: createReadStream(info.filePath), filename: 'video.mp4' },
+      {
+        caption      : resultCaption(info),
+        parse_mode   : 'MarkdownV2',
+        reply_markup : RESULT_MENU.reply_markup,
       }
-    }
-
-    if (lastErr) {
-      await ctx.replyWithMarkdownV2(
-        `${resultCaption(info)}\n\n⚠️ _Video could not be sent\\._`,
-        { reply_markup: RESULT_MENU.reply_markup }
-      );
-    }
+    );
+  } catch (sendErr) {
+    console.error(`[Send Error] ${sendErr.message}`);
+    await ctx.replyWithMarkdownV2(
+      `${resultCaption(info)}\n\n⚠️ _Video could not be sent\\._`,
+      { reply_markup: RESULT_MENU.reply_markup }
+    );
   } finally {
+    
     cleanupFile(info.filePath);
   }
 });
