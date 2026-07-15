@@ -540,11 +540,15 @@
           <div class="stat-value" id="stat-version">—</div>
           <div class="stat-label">Version</div>
         </div>
+        <div class="stat">
+          <div class="stat-value" id="stat-restarts">—</div>
+          <div class="stat-label">Restarts</div>
+        </div>
       </div>
     </div>
 
     <div class="panel">
-      <div class="section-label">Daily activity</div>
+      <div class="section-label">7 day activity</div>
       <div class="chart-wrap">
         <canvas id="activity-chart"></canvas>
       </div>
@@ -597,54 +601,6 @@
       </div>
     </div>
 
-    <div class="panel" id="api-docs-panel">
-      <div class="section-label">Public API</div>
-      <div class="api-intro">
-        Read-only, no API key needed. Anyone can call these from their own app, bot, or dashboard.
-      </div>
-
-      <div class="endpoint-list">
-        <div class="endpoint-card">
-          <div class="endpoint-head">
-            <span class="method-tag">GET</span>
-            <span class="endpoint-path">/api/stats</span>
-          </div>
-          <div class="endpoint-desc">
-            Live stats — users, downloads, success rate, memory, CPU, avg download time &amp; speed, last 7 days.
-          </div>
-          <div class="code-block" id="stats-code-block">curl <span id="stats-endpoint-url"></span>/api/stats
-            <div class="code-copy" data-copy-target="0">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
-            </div>
-          </div>
-        </div>
-
-        <div class="endpoint-card">
-          <div class="endpoint-head">
-            <span class="method-tag">GET</span>
-            <span class="endpoint-path">/api/endpoints</span>
-          </div>
-          <div class="endpoint-desc">
-            Machine-readable list of every endpoint this deployment exposes — use this to auto-discover the API.
-          </div>
-          <div class="code-block" id="endpoints-code-block">curl <span id="endpoints-endpoint-url"></span>/api/endpoints
-            <div class="code-copy" data-copy-target="1">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
-            </div>
-          </div>
-        </div>
-
-        <div class="endpoint-card">
-          <div class="endpoint-head">
-            <span class="method-tag" style="background:rgba(255,178,36,0.14);color:#ffb224;border-color:rgba(255,178,36,0.3);">NOTE</span>
-          </div>
-          <div class="endpoint-desc" style="margin-bottom:0;">
-            There's no public media-download REST endpoint — downloading only works through the Telegram bot itself. If you want your own app to trigger downloads, message the developer to discuss access.
-          </div>
-        </div>
-      </div>
-    </div>
-
     <div class="panel dev-card">
       <div class="avatar"><img src="https://avatars.githubusercontent.com/u/108660621?v=4" alt="" /></div>
       <div class="dev-meta">
@@ -692,11 +648,6 @@
 <script>
   const BOT_LINK = 'https://telegram.me/allmedia_downloaderx_bot';
   const QR_IMAGE_URL = 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=10&data=' + encodeURIComponent(BOT_LINK);
-
-  // Endpoint code blocks use the page's own origin, so they always match
-  // wherever this dashboard happens to be deployed.
-  document.getElementById('stats-endpoint-url').textContent = window.location.origin;
-  document.getElementById('endpoints-endpoint-url').textContent = window.location.origin;
 
   document.getElementById('copy-link-btn').addEventListener('click', async () => {
     const label = document.getElementById('copy-link-text');
@@ -829,8 +780,8 @@
         if (!meta || !meta.data) return;
         const { ctx } = chart;
         ctx.save();
-        ctx.font = "650 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-        ctx.fillStyle = 'rgba(255,255,255,0.55)';
+        ctx.font = "700 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+        ctx.fillStyle = 'rgba(255,178,36,0.95)';
         ctx.textAlign = 'center';
         meta.data.forEach((bar, i) => {
           if (!counts[i]) return;
@@ -858,8 +809,11 @@
             type: 'bar',
             label: 'Downloads',
             data: counts,
-            backgroundColor: 'rgba(255,106,26,0.55)',
+            backgroundColor: 'rgba(255,106,26,0.85)',
+            borderColor: '#ff6a1a',
+            borderWidth: 1,
             borderRadius: 6,
+            minBarLength: 4,
             yAxisID: 'yCount',
             order: 3,
           },
@@ -921,7 +875,8 @@
           yCount: {
             position: 'left',
             beginAtZero: true,
-            ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 10 }, precision: 0 },
+            suggestedMax: 5,
+            ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 10 }, precision: 0, stepSize: 1 },
             grid: { color: 'rgba(255,255,255,0.06)' },
           },
           yTime: {
@@ -1023,6 +978,7 @@
         : '—';
 
       document.getElementById('stat-version').textContent = data.version || '—';
+      document.getElementById('stat-restarts').textContent = data.restarts ?? '0';
 
       renderActivityChart(data.last7Days);
       renderLog(data.recentActivity);
@@ -1043,6 +999,7 @@
       document.getElementById('stat-avgtime').textContent = '—';
       document.getElementById('stat-avgspeed').textContent = '—';
       document.getElementById('stat-version').textContent = '—';
+      document.getElementById('stat-restarts').textContent = '—';
       renderActivityChart([]);
       renderLog([]);
     }
