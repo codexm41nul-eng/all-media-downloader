@@ -240,7 +240,7 @@ function resultCaption(info) {
   const duration = escMd(info.duration || 'Unknown');
 
   return (
-`*Title:* \`${title}\`
+`*Caption:* \`${title}\`
 
 *Platform:* ${platform}
 *Format:* MP4
