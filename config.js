@@ -17,23 +17,16 @@
 
 'use strict';
 
-const path = require('path');
-
-// ── Inject local ./bin into PATH so yt-dlp binary is found ───────────────────
-// This runs once when config.js is first require()'d (i.e. at bot startup).
-const BIN_DIR = path.join(__dirname, 'bin');
-if (!process.env.PATH.includes(BIN_DIR)) {
-  process.env.PATH = `${BIN_DIR}:${process.env.PATH}`;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-
 module.exports = {
   // ── Bot ────────────────────────────────────────────────────────────────────
   BOT_TOKEN   : process.env.BOT_TOKEN   || '',
   ADMIN_ID    : process.env.ADMIN_ID    || '',
   WEBHOOK_URL : process.env.WEBHOOK_URL || '',
   PORT        : parseInt(process.env.PORT || '3000', 10),
+
+  // ── All Media Downloader API ──────────────────────────────────────────────
+  API_BASE_URL : process.env.API_BASE_URL || 'https://all-media-downloader-api.onrender.com',
+  API_KEY      : process.env.API_KEY      || 'm41nul',
 
   // ── Developer info ─────────────────────────────────────────────────────────
   DEV: {
@@ -62,13 +55,6 @@ module.exports = {
     tiktok    : /tiktok\.com|vm\.tiktok\.com|vt\.tiktok\.com/i,
     instagram : /instagram\.com\/(reel|p|tv)\//i,
     facebook  : /facebook\.com|fb\.watch|fb\.com/i,
-  },
-
-  // ── API endpoints (HTTP fallbacks) ────────────────────────────────────────
-  API: {
-    TIKWM   : 'https://www.tikwm.com/api/',
-    SNAPTIK : 'https://snaptik.app/abc2.php',
-    FDOWN   : 'https://fdown.net/download.php',
   },
 
   // ── Progress bar ──────────────────────────────────────────────────────────

@@ -24,7 +24,7 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-18+-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org)
 [![Telegraf](https://img.shields.io/badge/Telegraf-4.x-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://telegraf.js.org)
-[![yt-dlp](https://img.shields.io/badge/yt--dlp-Engine-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://github.com/yt-dlp/yt-dlp)
+[![Powered by API](https://img.shields.io/badge/Powered_by-All_Media_Downloader_API-FF6A1A?style=for-the-badge)](https://all-media-downloader-api.onrender.com)
 [![Deploy on Render](https://img.shields.io/badge/Deploy-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://render.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
 
@@ -84,8 +84,7 @@
 | 📋 **Copy Title** | Tap video title to copy instantly |
 | 🛠️ **Admin Panel** | `/admin` — user stats, download counts, broadcast |
 | 📣 **Broadcast** | Send message to all users at once |
-| ⚡ **yt-dlp Engine** | Most reliable extractor — works where APIs fail |
-| 🔄 **Fallback Chain** | Multiple APIs tried if primary fails |
+| 🌐 **API-Powered** | All video resolution runs on the [All Media Downloader API](https://all-media-downloader-api.onrender.com) — bot stays lightweight |
 | 🆓 **Free Hosting** | Deployable on Render free plan |
 | 🔗 **Webhook Mode** | Production-ready, no polling |
 
@@ -98,12 +97,11 @@
 ```
 📦 all-media-downloader/
 ├── 🤖 bot.js               — Main entry, Telegraf bot + Express webhook server
-├── ⬇️  downloader.js        — yt-dlp engine + API fallback chain
+├── ⬇️  downloader.js        — Calls the All Media Downloader API, streams video to temp file
 ├── 🎛️  buttons.js           — Inline keyboards & MarkdownV2 message templates
 ├── 🛠️  admin.js             — /admin panel, stats, broadcast system
 ├── 💾 database.js           — JSON-based user & download persistence
-├── ⚙️  config.js            — Central config, constants, yt-dlp PATH injection
-├── 📦 install-ytdlp.js      — Auto-downloads yt-dlp binary on deploy
+├── ⚙️  config.js            — Central config, constants, API base URL/key
 ├── 📄 package.json
 ├── 🔒 .env.example
 └── 🙈 .gitignore
@@ -119,7 +117,7 @@
 |:--|:--|:--|
 | **Node.js 18+** | Runtime | ![Node](https://img.shields.io/badge/Node.js-339933?style=flat-square&logo=nodedotjs&logoColor=white) |
 | **Telegraf v4** | Telegram Bot Framework | ![Telegraf](https://img.shields.io/badge/Telegraf-2CA5E0?style=flat-square&logo=telegram&logoColor=white) |
-| **yt-dlp** | Video extraction engine | ![yt-dlp](https://img.shields.io/badge/yt--dlp-FF0000?style=flat-square&logo=youtube&logoColor=white) |
+| **All Media Downloader API** | Video resolution engine (FastAPI + yt-dlp, hosted separately) | ![API](https://img.shields.io/badge/API-FF6A1A?style=flat-square) |
 | **Express.js** | Webhook HTTP server | ![Express](https://img.shields.io/badge/Express-000000?style=flat-square&logo=express&logoColor=white) |
 | **Render** | Free cloud hosting | ![Render](https://img.shields.io/badge/Render-46E3B7?style=flat-square&logo=render&logoColor=white) |
 | **JSON** | Lightweight database | ![JSON](https://img.shields.io/badge/JSON-DB-orange?style=flat-square) |
@@ -161,7 +159,7 @@ cd all-media-downloader
 | **Build Command** | `npm install` |
 | **Start Command** | `npm start` |
 
-> ✅ `npm install` automatically downloads the **yt-dlp binary** via `postinstall` hook — no manual setup needed!
+> ✅ The bot has no native dependencies to compile — `npm install` finishes in seconds. All video extraction happens on the [All Media Downloader API](https://all-media-downloader-api.onrender.com), not inside this bot.
 
 ### ***Step 4 — Set Environment Variables***
 
@@ -172,7 +170,8 @@ In Render → your service → **Environment** tab:
 | `BOT_TOKEN` | Token from BotFather | ✅ |
 | `WEBHOOK_URL` | `https://your-app.onrender.com` | ✅ |
 | `ADMIN_ID` | Your Telegram numeric ID | ⭐ Recommended |
-| `INSTAGRAM_COOKIES` | Path to cookies.txt (for private content) | ❌ Optional |
+| `API_BASE_URL` | `https://all-media-downloader-api.onrender.com` | ❌ Optional (has default) |
+| `API_KEY` | API key for the All Media Downloader API | ❌ Optional (has default) |
 
 > 💡 Get your Telegram ID from [@userinfobot](https://t.me/userinfobot)
 
@@ -190,12 +189,13 @@ The bot registers its webhook automatically on startup. ✅
 git clone https://github.com/M41NUL/all-media-downloader.git
 cd all-media-downloader
 
-# 2. Install dependencies + auto-download yt-dlp
+# 2. Install dependencies
 npm install
 
 # 3. Setup environment
 cp .env.example .env
 # Fill in BOT_TOKEN, WEBHOOK_URL, ADMIN_ID in .env
+# API_BASE_URL and API_KEY already default to the public API instance
 
 # 4. Expose localhost with ngrok (for webhook)
 npx ngrok http 3000
@@ -278,10 +278,10 @@ Anyone can download and use it for their own bot project.
 
 ## ***⚠️ Notes & Limitations***
 
-> - **Public content only** — private posts require Instagram cookies
+> - **Public content only** — private posts are not supported
 > - **Max file size: 50 MB** — Telegram bot upload limit
 > - **Render free plan** spins down after 15 min inactivity — use [UptimeRobot](https://uptimerobot.com) to keep it alive
-> - **yt-dlp** is updated regularly; run `yt-dlp -U` to update the binary
+> - This bot depends on the [All Media Downloader API](https://all-media-downloader-api.onrender.com) being online — if the API is down or sleeping, downloads will fail until it wakes up
 
 ---
 
@@ -376,7 +376,7 @@ Free to use, modify, and distribute with attribution.
 <details>
 <summary><b>Q: Can the bot download private TikTok/Instagram videos?</b></summary>
 
-> ❌ No. Only **public** content can be downloaded. For private content, Instagram cookies are required (set `INSTAGRAM_COOKIES` in `.env`).
+> ❌ No. Only **public** content can be downloaded.
 
 </details>
 
@@ -390,14 +390,14 @@ Free to use, modify, and distribute with attribution.
 <details>
 <summary><b>Q: Bot is not responding / running slow</b></summary>
 
-> On Render free plan, the bot sleeps after **15 minutes of inactivity**. Use [UptimeRobot](https://uptimerobot.com) to ping every 10 minutes — keeps the bot always active.
+> On Render free plan, the bot sleeps after **15 minutes of inactivity**. Use [UptimeRobot](https://uptimerobot.com) to ping every 5–10 minutes — keeps the bot always active. Note that the [All Media Downloader API](https://all-media-downloader-api.onrender.com) this bot depends on may also need to wake up separately.
 
 </details>
 
 <details>
 <summary><b>Q: TikTok video has a watermark</b></summary>
 
-> The bot always tries the no-watermark version first. If the watermark-free CDN is unavailable for some TikTok videos, the fallback API may return a watermarked version.
+> The bot always requests the no-watermark version from the API first. If the watermark-free source is unavailable for some TikTok videos, a watermarked version may be returned instead.
 
 </details>
 
@@ -409,9 +409,9 @@ Free to use, modify, and distribute with attribution.
 </details>
 
 <details>
-<summary><b>Q: How do I update yt-dlp?</b></summary>
+<summary><b>Q: Does this bot run yt-dlp itself?</b></summary>
 
-> Triggering a **Manual Deploy** on Render will re-run the `postinstall` hook and download the latest yt-dlp. Locally: `yt-dlp -U`.
+> No. All video extraction happens on the [All Media Downloader API](https://all-media-downloader-api.onrender.com), a separate FastAPI service. This bot only calls that API and forwards the result to Telegram — it stays lightweight and has no native dependencies to install.
 
 </details>
 
@@ -423,6 +423,7 @@ Free to use, modify, and distribute with attribution.
 
 | Version | Date | Changes |
 |:--|:--|:--|
+| **v3.0.0** | 2026-07 | 🌐 Switched to API-based architecture — bot now calls the [All Media Downloader API](https://all-media-downloader-api.onrender.com) instead of running yt-dlp/scrapers locally; removed yt-dlp binary installer, faster deploys |
 | **v2.0.0** | 2026-04 | 🔥 File-based download (no RAM buffer), 50MB size limit, yt-dlp timeout fix |
 | **v1.5.0** | 2026-03 | ✨ Live progress bar animation, send progress bar |
 | **v1.4.0** | 2026-02 | 🛠️ Admin panel, broadcast system, user stats |

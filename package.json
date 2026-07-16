@@ -11,8 +11,7 @@
   "main": "bot.js",
   "scripts": {
     "start": "node bot.js",
-    "dev": "nodemon bot.js",
-    "postinstall": "node install-ytdlp.js"
+    "dev": "nodemon bot.js"
   },
   "engines": {
     "node": ">=18.0.0"
