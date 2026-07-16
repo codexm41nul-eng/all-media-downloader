@@ -54,6 +54,42 @@ async def about_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     await update.message.reply_text(text, parse_mode="Markdown", disable_web_page_preview=True)
 
 
+# Telegram hard-limits media captions to 1024 characters (server-enforced,
+# not something the bot can raise). We only trim the raw API caption text
+# itself if the combined message would exceed that; platform/size/duration
+# are never cut.
+TELEGRAM_CAPTION_LIMIT = 1024
+
+
+def _build_caption(result: dict) -> str:
+    platform = str(result.get("platform", "unknown")).title()
+    size = result.get("size", "unknown")
+    duration = result.get("duration", "unknown")
+    raw_caption = (result.get("caption") or "").strip()
+
+    meta = (
+        f"📹 *Platform:* {platform}\n"
+        f"📦 *Size:* {size}\n"
+        f"⏱ *Duration:* {duration}"
+    )
+
+    if not raw_caption:
+        return meta
+
+    header = "📝 *Caption:*\n"
+    full = f"{header}{raw_caption}\n\n{meta}"
+
+    if len(full) <= TELEGRAM_CAPTION_LIMIT:
+        return full
+
+    # Only the caption text is shortened, and only when Telegram's own
+    # limit forces it — platform/size/duration always stay intact.
+    room = TELEGRAM_CAPTION_LIMIT - len(header) - len(meta) - len("\n\n") - 1
+    room = max(room, 0)
+    trimmed = raw_caption[:room].rstrip() + "…" if room < len(raw_caption) else raw_caption
+    return f"{header}{trimmed}\n\n{meta}"
+
+
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = update.message
     if not message or not message.text:
@@ -97,13 +133,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     tmp_path = None
     try:
-        tmp_path = download_video(video_url)
+        tmp_path = download_video(video_url, platform=result.get("platform", ""))
 
-        caption = (
-            f"📹 *Platform:* {result.get('platform', 'unknown').title()}\n"
-            f"📦 *Size:* {result.get('size', 'unknown')}\n"
-            f"⏱ *Duration:* {result.get('duration', 'unknown')}"
-        )
+        caption = _build_caption(result)
 
         with open(tmp_path, "rb") as video_file:
             await message.reply_video(

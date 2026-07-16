@@ -22,7 +22,37 @@ class VideoDownloadError(Exception):
     """Raised for any other download failure."""
 
 
-def download_video(video_url: str, suffix: str = ".mp4") -> str:
+BASE_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Linux; Android 11; Pixel 5) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36"
+    ),
+    "Accept": "*/*",
+    "Accept-Language": "en-US,en;q=0.9",
+}
+
+PLATFORM_HEADERS = {
+    "tiktok": {**BASE_HEADERS, "Referer": "https://www.tiktok.com/", "Origin": "https://www.tiktok.com"},
+    "facebook": {**BASE_HEADERS, "Referer": "https://www.facebook.com/", "Origin": "https://www.facebook.com"},
+    "instagram": {**BASE_HEADERS, "Referer": "https://www.instagram.com/", "Origin": "https://www.instagram.com"},
+}
+
+
+def _headers_for(video_url: str, platform: str = "") -> dict:
+    platform = (platform or "").lower()
+    if platform in PLATFORM_HEADERS:
+        return PLATFORM_HEADERS[platform]
+    host = video_url.lower()
+    if "tiktok" in host:
+        return PLATFORM_HEADERS["tiktok"]
+    if "fbcdn" in host or "facebook" in host:
+        return PLATFORM_HEADERS["facebook"]
+    if "cdninstagram" in host or "instagram" in host:
+        return PLATFORM_HEADERS["instagram"]
+    return BASE_HEADERS
+
+
+def download_video(video_url: str, suffix: str = ".mp4", platform: str = "") -> str:
     """
     Stream-download the video at video_url to a temp file.
 
@@ -34,8 +64,15 @@ def download_video(video_url: str, suffix: str = ".mp4") -> str:
     tmp_fd, tmp_path = tempfile.mkstemp(suffix=suffix)
     os.close(tmp_fd)
 
+    headers = _headers_for(video_url, platform)
+
     try:
-        with requests.get(video_url, stream=True, timeout=DOWNLOAD_TIMEOUT) as response:
+        with requests.get(
+            video_url,
+            stream=True,
+            timeout=DOWNLOAD_TIMEOUT,
+            headers=headers,
+        ) as response:
             response.raise_for_status()
 
             # Fast check via Content-Length header when available
@@ -69,6 +106,15 @@ def download_video(video_url: str, suffix: str = ".mp4") -> str:
     except requests.exceptions.ConnectionError:
         _safe_delete(tmp_path)
         raise VideoDownloadError("Could not connect to the video source.")
+    except requests.exceptions.HTTPError as exc:
+        _safe_delete(tmp_path)
+        status = exc.response.status_code if exc.response is not None else None
+        if status == 403:
+            raise VideoDownloadError(
+                "The video link expired or was rejected by the source platform "
+                "(this is common with TikTok's signed CDN links). Please send the link again."
+            )
+        raise VideoDownloadError(f"Failed to download the video (HTTP {status}).")
     except requests.exceptions.RequestException as exc:
         _safe_delete(tmp_path)
         raise VideoDownloadError(f"Failed to download the video: {exc}")
