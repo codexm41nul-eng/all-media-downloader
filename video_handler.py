@@ -9,7 +9,13 @@ import tempfile
 
 import requests
 
-from config import DOWNLOAD_CHUNK_SIZE, DOWNLOAD_TIMEOUT, MAX_FILE_SIZE_BYTES
+from config import (
+    API_KEY,
+    DOWNLOAD_CHUNK_SIZE,
+    DOWNLOAD_TIMEOUT,
+    MAX_FILE_SIZE_BYTES,
+    PROXY_VIDEO_ENDPOINT,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +58,26 @@ def _headers_for(video_url: str, platform: str = "") -> dict:
     return BASE_HEADERS
 
 
+def _resolve_download_url(video_url: str, platform: str) -> tuple:
+    """
+    Returns (url_to_fetch, headers, params) for the actual HTTP GET.
+
+    TikTok's signed CDN urls commonly reject fetches from a client other
+    than the one that resolved them via yt-dlp (this bot != the API
+    server). Routing through the API's proxy endpoint keeps the fetch on
+    the API server itself, avoiding that mismatch. Other platforms are
+    less strict and are still fetched directly.
+    """
+    platform_key = (platform or "").lower()
+    if platform_key == "tiktok" or "tiktok" in video_url.lower():
+        return (
+            PROXY_VIDEO_ENDPOINT,
+            {"x-api-key": API_KEY},
+            {"video_url": video_url, "platform": "tiktok"},
+        )
+    return (video_url, _headers_for(video_url, platform), None)
+
+
 def download_video(video_url: str, suffix: str = ".mp4", platform: str = "") -> str:
     """
     Stream-download the video at video_url to a temp file.
@@ -64,14 +90,15 @@ def download_video(video_url: str, suffix: str = ".mp4", platform: str = "") -> 
     tmp_fd, tmp_path = tempfile.mkstemp(suffix=suffix)
     os.close(tmp_fd)
 
-    headers = _headers_for(video_url, platform)
+    fetch_url, headers, params = _resolve_download_url(video_url, platform)
 
     try:
         with requests.get(
-            video_url,
+            fetch_url,
             stream=True,
             timeout=DOWNLOAD_TIMEOUT,
             headers=headers,
+            params=params,
         ) as response:
             response.raise_for_status()
 
@@ -113,6 +140,11 @@ def download_video(video_url: str, suffix: str = ".mp4", platform: str = "") -> 
             raise VideoDownloadError(
                 "The video link expired or was rejected by the source platform "
                 "(this is common with TikTok's signed CDN links). Please send the link again."
+            )
+        if status == 502:
+            raise VideoDownloadError(
+                "The source platform rejected this video (link likely expired). "
+                "Please send the link again."
             )
         raise VideoDownloadError(f"Failed to download the video (HTTP {status}).")
     except requests.exceptions.RequestException as exc:

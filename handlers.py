@@ -94,10 +94,11 @@ def _build_caption(result: dict) -> str:
     if not raw_caption:
         return meta
 
-    header = "📝 *Caption* \\(tap to copy\\):\n"
-
     def wrap(text: str) -> str:
-        return f"{header}```\n{_escape_mdv2_code(text)}\n```\n\n{meta}"
+        # Inline code (single backtick) doesn't render multi-line text
+        # reliably in Telegram, so newlines are flattened to spaces first.
+        flat = " ".join(text.split())
+        return f"📝 *Caption:* `{_escape_mdv2_code(flat)}`\n\n{meta}"
 
     full = wrap(raw_caption)
 
