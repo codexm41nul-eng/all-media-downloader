@@ -74,9 +74,33 @@ def _escape_mdv2(text: str) -> str:
     return "".join("\\" + ch if ch in _MDV2_SPECIAL_CHARS else ch for ch in text)
 
 
+_INVISIBLE_CHARS_RE = re.compile(
+    "[\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]"
+)
+
+
+def _strip_invisible_chars(text: str) -> str:
+    # Zero-width spaces/joiners and bidi override/embedding marks are
+    # invisible in the caption text as displayed, but some Telegram clients'
+    # entity parsers handle them inconsistently right at a MarkdownV2 code
+    # span boundary — this was silently breaking the whole send for some
+    # Facebook captions (mobile composers commonly insert these), falling
+    # back to plain text. Stripping them is safe since they carry no
+    # visible meaning anyway.
+    return _INVISIBLE_CHARS_RE.sub("", text)
+
+
 def _escape_mdv2_code(text: str) -> str:
-    # Inside a ``` code block, only backtick and backslash need escaping.
-    return text.replace("\\", "\\\\").replace("`", "\\`")
+    # Telegram's MarkdownV2 does NOT support escaping a backtick inside a
+    # single-backtick inline code span — a backslash there is taken
+    # literally, not as an escape, so a caption containing a real backtick
+    # character breaks the code span and previously caused the entire
+    # MarkdownV2 send to fail (silently falling back to plain text with
+    # stray backticks visible, which is what was happening for some FB
+    # captions). Swapping it for a visually similar character sidesteps
+    # this entirely since there's no valid way to keep a literal backtick
+    # inside an inline code span.
+    return text.replace("`", "ˋ")
 
 
 _PLATFORM_EMOJI = {
@@ -95,6 +119,7 @@ def _build_caption(result: dict) -> str:
     size = _escape_mdv2(str(result.get("size", "unknown")))
     duration = _escape_mdv2(str(result.get("duration", "unknown")))
     raw_caption = (result.get("caption") or "").strip()
+    raw_caption = _strip_invisible_chars(raw_caption)
 
     meta = (
         f"{platform_emoji} *Platform:* {platform}\n"
@@ -190,7 +215,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 video_file.seek(0)
                 # Strip MarkdownV2 escaping/formatting chars for a safe plain fallback.
                 plain_caption = re.sub(r"\\([_*\[\]()~`>#+\-=|{}.!])", r"\1", caption)
-                plain_caption = plain_caption.replace("```", "").replace("*", "")
+                plain_caption = plain_caption.replace("```", "").replace("`", "").replace("*", "")
                 await message.reply_video(
                     video=video_file,
                     caption=plain_caption,
