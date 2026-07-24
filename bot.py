@@ -1,15 +1,3 @@
-"""
-All Media Downloader — Telegram bot entrypoint.
-
-Downloads TikTok, Instagram, and Facebook videos via an external API
-(no yt-dlp or scraping done here). Run with: python bot.py
-
-Deployed on Render as a Web Service (free plan has no free Background
-Worker option), so this also starts a tiny Flask keep-alive server on
-$PORT in a background thread. Point an UptimeRobot HTTP(s) monitor at
-the service URL (e.g. every 5 minutes) to stop it from sleeping.
-"""
-
 import asyncio
 import logging
 import os
@@ -40,36 +28,62 @@ logging.getLogger("werkzeug").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
-# --- Keep-alive web server (for Render Web Service + UptimeRobot) ---
 keepalive_app = Flask(__name__)
 
+bot_status = {"polling": False, "last_error": None}
+start_time = time.time()
+
+def format_uptime(seconds: float) -> str:
+    seconds = int(seconds)
+    days, seconds = divmod(seconds, 86400)
+    hours, seconds = divmod(seconds, 3600)
+    minutes, seconds = divmod(seconds, 60)
+    parts = []
+    if days:
+        parts.append(f"{days}d")
+    if hours or days:
+        parts.append(f"{hours}h")
+    if minutes or hours or days:
+        parts.append(f"{minutes}m")
+    parts.append(f"{seconds}s")
+    return " ".join(parts)
 
 @keepalive_app.route("/")
 def home():
-    return "All Media Downloader bot is alive.", 200
-
+    uptime = format_uptime(time.time() - start_time)
+    return f"All Media Downloader bot is alive. Uptime: {uptime}", 200
 
 @keepalive_app.route("/health")
 def health():
-    return {"status": "ok"}, 200
+    uptime_seconds = time.time() - start_time
+    if bot_status["polling"]:
+        return {"status": "ok", "polling": True, "uptime_seconds": int(uptime_seconds), "uptime": format_uptime(uptime_seconds)}, 200
+    return {"status": "degraded", "polling": False, "last_error": bot_status["last_error"], "uptime_seconds": int(uptime_seconds), "uptime": format_uptime(uptime_seconds)}, 200
 
-
-def run_keepalive_server() -> None:
+def run_keepalive_server(ready_event: threading.Event) -> None:
     port = int(os.environ.get("PORT", 8080))
-    keepalive_app.run(host="0.0.0.0", port=port)
-
+    try:
+        ready_event.set()
+        keepalive_app.run(host="0.0.0.0", port=port, use_reloader=False)
+    except Exception:
+        logger.exception("Keep-alive Flask server crashed")
+        ready_event.set()
 
 def main() -> None:
     if not BOT_TOKEN:
         logger.error("BOT_TOKEN environment variable is not set. Exiting.")
         sys.exit(1)
 
-    # Start the Flask keep-alive server in a background thread so Render
-    # sees an open port immediately, while the bot polls in the main thread.
-    threading.Thread(target=run_keepalive_server, daemon=True).start()
+    flask_ready = threading.Event()
+    threading.Thread(
+        target=run_keepalive_server, args=(flask_ready,), daemon=True
+    ).start()
+    if not flask_ready.wait(timeout=15):
+        logger.error(
+            "Keep-alive server did not signal readiness within 15s; "
+            "continuing anyway, but Render's port check may fail."
+        )
 
-    # Explicitly create/set an event loop on the main thread. Newer Python
-    # versions no longer auto-create one, which run_polling() relies on.
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
@@ -84,23 +98,18 @@ def main() -> None:
 
     logger.info("All Media Downloader bot starting...")
 
-    # If another instance (e.g. a previous deploy still shutting down, or a
-    # duplicate service accidentally running elsewhere) is polling with the
-    # same BOT_TOKEN, Telegram raises Conflict and python-telegram-bot lets
-    # run_polling() crash outright — which on Render just triggers an
-    # auto-restart into the same Conflict, over and over. drop_pending_updates
-    # clears any stale getUpdates session on our own start, and the retry
-    # loop below absorbs a transient Conflict (e.g. the old instance hasn't
-    # finished shutting down yet) instead of crash-looping.
     max_attempts = 5
     for attempt in range(1, max_attempts + 1):
         try:
+            bot_status["polling"] = True
             application.run_polling(
                 allowed_updates=["message", "callback_query"],
                 drop_pending_updates=True,
             )
             break
-        except Conflict:
+        except Conflict as e:
+            bot_status["polling"] = False
+            bot_status["last_error"] = str(e)
             if attempt == max_attempts:
                 logger.error(
                     "Another bot instance is running with the same BOT_TOKEN "
@@ -109,7 +118,10 @@ def main() -> None:
                     "using this token.",
                     max_attempts,
                 )
-                raise
+                logger.warning("Cooling down 60s before retrying polling loop.")
+                time.sleep(60)
+                attempt = 0
+                continue
             wait_seconds = min(5 * attempt, 20)
             logger.warning(
                 "Conflict: another instance is polling with this BOT_TOKEN "
@@ -119,7 +131,11 @@ def main() -> None:
                 wait_seconds,
             )
             time.sleep(wait_seconds)
-
+        except Exception as e:
+            bot_status["polling"] = False
+            bot_status["last_error"] = str(e)
+            logger.exception("run_polling() failed unexpectedly; retrying in 15s")
+            time.sleep(15)
 
 if __name__ == "__main__":
     main()
