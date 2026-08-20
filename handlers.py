@@ -171,7 +171,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     url = get_supported_url(text)
 
-    status_message = await message.reply_text("⏳ Processing your link, please wait...")
+    status_message = await message.reply_text("⏳ Downloading, please wait...")
 
     # Fetch video info from the external API
     result = fetch_video_info(url)
@@ -199,11 +199,16 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         )
 
         caption = _build_caption(result)
+        # The API resolves a clean, human-readable filename per video
+        # (e.g. "video title - All Media Downloader.mp4"). Fall back to a
+        # generic name only if the API didn't provide one.
+        filename = result.get("filename") or "All Media Downloader.mp4"
 
         with open(tmp_path, "rb") as video_file:
             try:
                 await message.reply_video(
                     video=video_file,
+                    filename=filename,
                     caption=caption,
                     parse_mode="MarkdownV2",
                     supports_streaming=True,
@@ -218,6 +223,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 plain_caption = plain_caption.replace("```", "").replace("`", "").replace("*", "")
                 await message.reply_video(
                     video=video_file,
+                    filename=filename,
                     caption=plain_caption,
                     supports_streaming=True,
                 )
